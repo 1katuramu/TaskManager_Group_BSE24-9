@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager API Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 10px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            height: calc(100vh - 20px);
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .header h1 {
+            font-size: 1.8em;
+            margin: 0 0 5px 0;
+        }
+        
+        .header p {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .content {
+            padding: 15px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .api-section {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .api-section h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+        }
+        
+        .method-badge {
+            background: #27ae60;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .method-badge.post { background: #3498db; }
+        .method-badge.put { background: #f39c12; }
+        .method-badge.delete { background: #e74c3c; }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: #2c3e50;
+            border-radius: 10px;
+            color: white;
+        }
+        
+        .result-section h3 {
+            margin-bottom: 20px;
+            color: #ecf0f1;
+        }
+        
+        #result {
+            background: #34495e;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            min-height: 100px;
+            border-left: 4px solid #4facfe;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background: #27ae60; }
+        .status-error { background: #e74c3c; }
+        .status-pending { background: #f39c12; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .result-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #2c3e50;
+            border-radius: 8px;
+            color: white;
+            flex: 1;
+            min-height: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .result-section h3 {
+            margin-bottom: 10px;
+            color: #ecf0f1;
+            font-size: 1.1em;
+        }
+        
+        #result {
+            background: #34495e;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            min-height: 120px;
+            border-left: 4px solid #4facfe;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            .content {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Task Manager API Tester</h1>
+            <p>Test all your Task Manager API endpoints with ease</p>
+        </div>
+        
+        <div class="content">
+            <div class="grid">
+                <!-- GET All Tasks -->
+                <div class="api-section">
+                    <h3>
+                        <span class="method-badge">GET</span>
+                        Get All Tasks
+                    </h3>
+                    <button onclick="getTasks()">📋 Get All Tasks</button>
+                </div>
+                
+                <!-- POST Add Task -->
+                <div class="api-section">
+                    <h3>
+                        <span class="method-badge post">POST</span>
+                        Add New Task
+                    </h3>
+                    <div class="form-group">
+                        <input type="text" id="taskTitle" placeholder="Enter task title" value="Test task">
+                    </div>
+                    <button onclick="addTask()">➕ Add Task</button>
+                </div>
+                
+                <!-- PUT Update Task -->
+                <div class="api-section">
+                    <h3>
+                        <span class="method-badge put">PUT</span>
+                        Update Task
+                    </h3>
+                    <div class="form-group">
+                        <input type="number" id="updateTaskId" placeholder="Task ID" min="1">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="updateTaskTitle" placeholder="New title">
+                    </div>
+                    <div class="form-group">
+                        <select id="updateTaskCompleted">
+                            <option value="">Keep status</option>
+                            <option value="true">Completed</option>
+                            <option value="false">Not Completed</option>
+                        </select>
+                    </div>
+                    <button onclick="updateTask()">✏️ Update</button>
+                </div>
+                
+                <!-- DELETE Task -->
+                <div class="api-section">
+                    <h3>
+                        <span class="method-badge delete">DELETE</span>
+                        Delete Task
+                    </h3>
+                    <div class="form-group">
+                        <input type="number" id="deleteTaskId" placeholder="Task ID to delete" min="1">
+                    </div>
+                    <button onclick="deleteTask()" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">🗑️ Delete</button>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="api-section">
+                    <h3>⚡ Quick Actions</h3>
+                    <button onclick="testCompleteFlow()">🔄 Test Flow</button>
+                    <button onclick="addMultipleTasks()">📝 Add Multiple</button>
+                    <button onclick="clearResult()">🧹 Clear</button>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>📊 API Response</h3>
+                <div id="result">Click any button above to test the API endpoints...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        
+        function updateResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = isError ? 'status-error' : 'status-success';
+            const statusText = isError ? 'ERROR' : 'SUCCESS';
+            
+            resultDiv.innerHTML = `<span class="status-indicator ${statusClass}"></span><strong>[${timestamp}] ${statusText}:</strong>\n${message}`;
+        }
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Handle 204 No Content responses (like DELETE)
+                if (response.status === 204) {
+                    return { success: true, data: null };
+                }
+                
+                // Try to parse JSON, but handle cases where there's no content
+                const text = await response.text();
+                if (text.trim() === '') {
+                    return { success: true, data: null };
+                }
+                
+                const data = JSON.parse(text);
+                return { success: true, data };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function getTasks() {
+            updateResult('Loading tasks...', false);
+            const result = await makeRequest(`${API_URL}/tasks`);
+            
+            if (result.success) {
+                updateResult(`Found ${result.data.length} tasks:\n\n${JSON.stringify(result.data, null, 2)}`);
+            } else {
+                updateResult(`Failed to get tasks: ${result.error}`, true);
+            }
+        }
+        
+        async function addTask() {
+            const title = document.getElementById('taskTitle').value.trim();
+            if (!title) {
+                updateResult('Please enter a task title', true);
+                return;
+            }
+            
+            updateResult('Adding task...', false);
+            const result = await makeRequest(`${API_URL}/tasks`, {
+                method: 'POST',
+                body: JSON.stringify({ title })
+            });
+            
+            if (result.success) {
+                updateResult(`Task added successfully:\n\n${JSON.stringify(result.data, null, 2)}`);
+                document.getElementById('taskTitle').value = '';
+            } else {
+                updateResult(`Failed to add task: ${result.error}`, true);
+            }
+        }
+        
+        async function updateTask() {
+            const id = document.getElementById('updateTaskId').value;
+            const title = document.getElementById('updateTaskTitle').value.trim();
+            const completed = document.getElementById('updateTaskCompleted').value;
+            
+            if (!id) {
+                updateResult('Please enter a task ID', true);
+                return;
+            }
+            
+            const updateData = {};
+            if (title) updateData.title = title;
+            if (completed !== '') updateData.completed = completed === 'true';
+            
+            if (Object.keys(updateData).length === 0) {
+                updateResult('Please provide at least one field to update', true);
+                return;
+            }
+            
+            updateResult('Updating task...', false);
+            const result = await makeRequest(`${API_URL}/tasks/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(updateData)
+            });
+            
+            if (result.success) {
+                updateResult(`Task updated successfully:\n\n${JSON.stringify(result.data, null, 2)}`);
+                document.getElementById('updateTaskId').value = '';
+                document.getElementById('updateTaskTitle').value = '';
+                document.getElementById('updateTaskCompleted').value = '';
+            } else {
+                updateResult(`Failed to update task: ${result.error}`, true);
+            }
+        }
+        
+        async function deleteTask() {
+            const id = document.getElementById('deleteTaskId').value;
+            if (!id) {
+                updateResult('Please enter a task ID to delete', true);
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete task ${id}?`)) {
+                return;
+            }
+            
+            updateResult('Deleting task...', false);
+            const result = await makeRequest(`${API_URL}/tasks/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (result.success) {
+                updateResult(`Task ${id} deleted successfully`);
+                document.getElementById('deleteTaskId').value = '';
+            } else {
+                updateResult(`Failed to delete task: ${result.error}`, true);
+            }
+        }
+        
+        async function testCompleteFlow() {
+            updateResult('Testing complete CRUD flow...', false);
+            
+            // Step 1: Get initial tasks
+            let result = await makeRequest(`${API_URL}/tasks`);
+            if (!result.success) {
+                updateResult(`Failed to get initial tasks: ${result.error}`, true);
+                return;
+            }
+            
+            let message = `Step 1 - Initial tasks (${result.data.length}):\n${JSON.stringify(result.data, null, 2)}\n\n`;
+            
+            // Step 2: Add a new task
+            result = await makeRequest(`${API_URL}/tasks`, {
+                method: 'POST',
+                body: JSON.stringify({ title: 'API Test Task' })
+            });
+            
+            if (!result.success) {
+                updateResult(`Failed to add test task: ${result.error}`, true);
+                return;
+            }
+            
+            const newTaskId = result.data.id;
+            message += `Step 2 - Added new task:\n${JSON.stringify(result.data, null, 2)}\n\n`;
+            
+            // Step 3: Update the task
+            result = await makeRequest(`${API_URL}/tasks/${newTaskId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ completed: true })
+            });
+            
+            if (!result.success) {
+                updateResult(`Failed to update task: ${result.error}`, true);
+                return;
+            }
+            
+            message += `Step 3 - Updated task:\n${JSON.stringify(result.data, null, 2)}\n\n`;
+            
+            // Step 4: Get all tasks again
+            result = await makeRequest(`${API_URL}/tasks`);
+            if (!result.success) {
+                updateResult(`Failed to get final tasks: ${result.error}`, true);
+                return;
+            }
+            
+            message += `Step 4 - Final tasks (${result.data.length}):\n${JSON.stringify(result.data, null, 2)}\n\n`;
+            
+            // Step 5: Delete the test task
+            result = await makeRequest(`${API_URL}/tasks/${newTaskId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!result.success) {
+                updateResult(`Failed to delete test task: ${result.error}`, true);
+                return;
+            }
+            
+            message += `Step 5 - Deleted test task (ID: ${newTaskId})\n\n✅ Complete CRUD flow test successful!`;
+            updateResult(message);
+        }
+        
+        async function addMultipleTasks() {
+            updateResult('Adding multiple test tasks...', false);
+            
+            const tasks = [
+                'API Test Task 1',
+                'API Test Task 2', 
+                'API Test Task 3'
+            ];
+            
+            let message = 'Adding multiple tasks:\n\n';
+            let successCount = 0;
+            
+            for (let i = 0; i < tasks.length; i++) {
+                const result = await makeRequest(`${API_URL}/tasks`, {
+                    method: 'POST',
+                    body: JSON.stringify({ title: tasks[i] })
+                });
+                
+                if (result.success) {
+                    message += `✅ ${tasks[i]} - Added successfully\n`;
+                    successCount++;
+                } else {
+                    message += `❌ ${tasks[i]} - Failed: ${result.error}\n`;
+                }
+            }
+            
+            message += `\n📊 Summary: ${successCount}/${tasks.length} tasks added successfully`;
+            updateResult(message);
+        }
+        
+        function clearResult() {
+            document.getElementById('result').innerHTML = 'Result cleared. Click any button above to test the API endpoints...';
+        }
+        
+        // Auto-load tasks on page load
+        window.addEventListener('load', () => {
+            updateResult('Page loaded. Click "Get All Tasks" to start testing, or try the "Test Complete Flow" button for a comprehensive test.');
+        });
+    </script>
+</body>
+</html>
