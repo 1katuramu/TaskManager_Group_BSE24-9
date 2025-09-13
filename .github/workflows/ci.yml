@@ -24,11 +24,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: client/package-lock.json
     
-    - name: Install frontend dependencies
-      run: npm ci
+    - name: Update package-lock.json and install dependencies
+      run: |
+        npm install
+        npm ci
     
     - name: Run frontend tests
       run: npm test -- --coverage --watchAll=false --passWithNoTests
@@ -60,11 +60,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: server/package-lock.json
     
-    - name: Install backend dependencies
-      run: npm ci
+    - name: Update package-lock.json and install dependencies
+      run: |
+        npm install
+        npm ci
     
     - name: Run backend tests
       run: npm test --passWithNoTests
@@ -87,8 +87,8 @@ jobs:
     
     - name: Install dependencies
       run: |
-        cd server && npm ci
-        cd ../client && npm ci
+        cd server && npm install
+        cd ../client && npm install
     
     - name: Start backend server
       run: |
