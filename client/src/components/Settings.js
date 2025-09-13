@@ -221,9 +221,15 @@ const Settings = ({ tasks, onClearAllTasks, onExportTasks, onImportTasks }) => {
           <div className="support-info">
             <p>Need help or have suggestions?</p>
             <div className="support-links">
-              <a href="#" className="support-link">📧 Contact Support</a>
-              <a href="#" className="support-link">📖 User Guide</a>
-              <a href="#" className="support-link">🐛 Report Bug</a>
+              <button className="support-link" onClick={() => window.open('mailto:support@taskmanager.com', '_blank')}>
+                📧 Contact Support
+              </button>
+              <button className="support-link" onClick={() => window.open('https://github.com/1katuramu/TaskManager_Group_BSE24-9', '_blank')}>
+                📖 User Guide
+              </button>
+              <button className="support-link" onClick={() => window.open('https://github.com/1katuramu/TaskManager_Group_BSE24-9/issues', '_blank')}>
+                🐛 Report Bug
+              </button>
             </div>
           </div>
         </div>
