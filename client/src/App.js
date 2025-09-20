@@ -20,7 +20,8 @@ function App() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/tasks');
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/tasks`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
@@ -37,7 +38,8 @@ function App() {
 
   const addTask = async (taskData) => {
     try {
-      const response = await fetch('/tasks', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,7 +60,8 @@ function App() {
 
   const updateTask = async (id, updates) => {
     try {
-      const response = await fetch(`/tasks/${id}`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/tasks/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +84,8 @@ function App() {
 
   const deleteTask = async (id) => {
     try {
-      const response = await fetch(`/tasks/${id}`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/tasks/${id}`, {
         method: 'DELETE',
       });
 
@@ -105,8 +109,9 @@ function App() {
   const clearAllTasks = async () => {
     try {
       // Delete all tasks one by one
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       for (const task of tasks) {
-        await fetch(`/tasks/${task.id}`, {
+        await fetch(`${API_URL}/tasks/${task.id}`, {
           method: 'DELETE',
         });
       }
@@ -119,8 +124,9 @@ function App() {
   const importTasks = async (importedTasks) => {
     try {
       // Add each imported task
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       for (const task of importedTasks) {
-        const response = await fetch('/tasks', {
+        const response = await fetch(`${API_URL}/tasks`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
