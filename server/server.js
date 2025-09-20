@@ -15,6 +15,7 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Task Manager API is running!',
+    version: '1.0.1',
     endpoints: {
       tasks: '/tasks',
       health: '/health'
