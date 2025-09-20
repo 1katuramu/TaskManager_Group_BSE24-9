@@ -21,16 +21,7 @@ function App() {
       setLoading(true);
       setError(null);
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      
-      // Debug logging
-      console.log('API_URL:', API_URL);
-      console.log('Full URL:', `${API_URL}/tasks`);
-      
-      // Temporary hardcoded URL for testing
-      const testURL = 'https://task-manager-backend-23yh.onrender.com/tasks';
-      console.log('Testing with hardcoded URL:', testURL);
-      
-      const response = await fetch(testURL);
+      const response = await fetch(`${API_URL}/tasks`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
