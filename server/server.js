@@ -6,11 +6,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: [
-    'http://localhost:3000', // Local development
-    'https://*.vercel.app',   // Vercel deployments
-    'https://*.netlify.app'   // Netlify deployments (if needed)
-  ],
+  origin: true, // Allow all origins for debugging
   credentials: true
 }));
 app.use(express.json());
