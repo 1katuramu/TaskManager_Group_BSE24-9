@@ -15,6 +15,22 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Task Manager API is running!',
+    endpoints: {
+      tasks: '/tasks',
+      health: '/health'
+    }
+  });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Serve static files (for API tester)
 app.use(express.static('../'));
 
