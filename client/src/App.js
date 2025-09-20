@@ -21,6 +21,11 @@ function App() {
       setLoading(true);
       setError(null);
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      
+      // Debug logging
+      console.log('API_URL:', API_URL);
+      console.log('Full URL:', `${API_URL}/tasks`);
+      
       const response = await fetch(`${API_URL}/tasks`);
       
       if (!response.ok) {
