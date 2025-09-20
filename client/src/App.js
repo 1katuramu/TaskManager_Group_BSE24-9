@@ -26,7 +26,11 @@ function App() {
       console.log('API_URL:', API_URL);
       console.log('Full URL:', `${API_URL}/tasks`);
       
-      const response = await fetch(`${API_URL}/tasks`);
+      // Temporary hardcoded URL for testing
+      const testURL = 'https://task-manager-backend-23yh.onrender.com/tasks';
+      console.log('Testing with hardcoded URL:', testURL);
+      
+      const response = await fetch(testURL);
       
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
