@@ -1,0 +1,43 @@
+{
+  "name": "Task Manager Production Monitoring",
+  "version": "1.0.0",
+  "description": "Production monitoring dashboard configuration",
+  "services": [
+    {
+      "name": "Frontend",
+      "url": "https://task-manager-group-bse-24-9.vercel.app",
+      "type": "web",
+      "healthEndpoint": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Backend API",
+      "url": "https://task-manager-backend-23yh.onrender.com",
+      "type": "api",
+      "healthEndpoint": "/health",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Tasks API",
+      "url": "https://task-manager-backend-23yh.onrender.com",
+      "type": "api",
+      "healthEndpoint": "/tasks",
+      "expectedStatus": 200
+    }
+  ],
+  "alerts": {
+    "email": [],
+    "slack": [],
+    "thresholds": {
+      "responseTime": 5000,
+      "errorRate": 5,
+      "uptime": 99.5
+    }
+  },
+  "metrics": {
+    "responseTime": true,
+    "uptime": true,
+    "errorRate": true,
+    "statusCodes": true
+  }
+}

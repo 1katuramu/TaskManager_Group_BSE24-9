@@ -1,8 +1,19 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Database file path
+const DB_FILE = path.join(__dirname, 'data', 'tasks.json');
+const DATA_DIR = path.join(__dirname, 'data');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
 // Middleware
 app.use(cors({
@@ -31,25 +42,50 @@ app.get('/health', (req, res) => {
 // Serve static files (for API tester)
 app.use(express.static('../'));
 
-// In-memory storage for tasks
-let tasks = [
-  {
-    id: 1,
-    title: 'Learn React',
-    completed: false,
-    dueDate: null,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 2,
-    title: 'Build Task Manager',
-    completed: false,
-    dueDate: null,
-    createdAt: new Date().toISOString()
+// Database functions
+function loadTasks() {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const data = fs.readFileSync(DB_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Error loading tasks:', error);
   }
-];
+  
+  // Default tasks for first run
+  return [
+    {
+      id: 1,
+      title: 'Learn React',
+      completed: false,
+      dueDate: null,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 2,
+      title: 'Build Task Manager',
+      completed: false,
+      dueDate: null,
+      createdAt: new Date().toISOString()
+    }
+  ];
+}
 
-let nextId = 3;
+function saveTasks(tasks) {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(tasks, null, 2));
+  } catch (error) {
+    console.error('Error saving tasks:', error);
+  }
+}
+
+function getNextId(tasks) {
+  return tasks.length > 0 ? Math.max(...tasks.map(task => task.id)) + 1 : 1;
+}
+
+// Load tasks from database
+let tasks = loadTasks();
 
 // Routes
 
@@ -67,7 +103,7 @@ app.post('/tasks', (req, res) => {
   }
 
   const newTask = {
-    id: nextId++,
+    id: getNextId(tasks),
     title: title.trim(),
     completed: false,
     dueDate: dueDate || null,
@@ -75,6 +111,7 @@ app.post('/tasks', (req, res) => {
   };
 
   tasks.push(newTask);
+  saveTasks(tasks);
   res.status(201).json(newTask);
 });
 
@@ -107,6 +144,7 @@ app.put('/tasks/:id', (req, res) => {
     }
   }
 
+  saveTasks(tasks);
   res.json(tasks[taskIndex]);
 });
 
@@ -122,6 +160,7 @@ app.delete('/tasks/:id', (req, res) => {
   }
 
   tasks.splice(taskIndex, 1);
+  saveTasks(tasks);
   res.status(204).send();
 });
 
