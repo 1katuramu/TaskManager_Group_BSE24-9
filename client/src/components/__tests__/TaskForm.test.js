@@ -11,17 +11,17 @@ describe('TaskForm Component', () => {
   });
 
   test('renders form elements correctly', () => {
-    render(<TaskForm onSubmit={mockOnSubmit} />);
+    render(<TaskForm onAddTask={mockOnSubmit} />);
     
-    expect(screen.getByPlaceholderText('Enter task title...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Enter a new task...')).toBeInTheDocument();
     expect(screen.getByText('Add Task')).toBeInTheDocument();
     expect(screen.getByText('Advanced')).toBeInTheDocument();
   });
 
   test('submits task with title only', async () => {
-    render(<TaskForm onSubmit={mockOnSubmit} />);
+    render(<TaskForm onAddTask={mockOnSubmit} />);
     
-    const input = screen.getByPlaceholderText('Enter task title...');
+    const input = screen.getByPlaceholderText('Enter a new task...');
     const submitButton = screen.getByText('Add Task');
     
     fireEvent.change(input, { target: { value: 'New Task' } });
@@ -36,16 +36,16 @@ describe('TaskForm Component', () => {
   });
 
   test('submits task with due date when advanced mode is used', async () => {
-    render(<TaskForm onSubmit={mockOnSubmit} />);
+    render(<TaskForm onAddTask={mockOnSubmit} />);
     
-    const input = screen.getByPlaceholderText('Enter task title...');
+    const input = screen.getByPlaceholderText('Enter a new task...');
     const advancedButton = screen.getByText('Advanced');
     const submitButton = screen.getByText('Add Task');
     
     fireEvent.change(input, { target: { value: 'Task with Due Date' } });
     fireEvent.click(advancedButton);
     
-    const dateInput = screen.getByLabelText('Due Date');
+    const dateInput = screen.getByLabelText('Due Date (Optional):');
     fireEvent.change(dateInput, { target: { value: '2024-12-31' } });
     
     fireEvent.click(submitButton);
@@ -59,9 +59,9 @@ describe('TaskForm Component', () => {
   });
 
   test('clears form after successful submission', async () => {
-    render(<TaskForm onSubmit={mockOnSubmit} />);
+    render(<TaskForm onAddTask={mockOnSubmit} />);
     
-    const input = screen.getByPlaceholderText('Enter task title...');
+    const input = screen.getByPlaceholderText('Enter a new task...');
     const submitButton = screen.getByText('Add Task');
     
     fireEvent.change(input, { target: { value: 'New Task' } });
@@ -73,7 +73,7 @@ describe('TaskForm Component', () => {
   });
 
   test('does not submit empty task', () => {
-    render(<TaskForm onSubmit={mockOnSubmit} />);
+    render(<TaskForm onAddTask={mockOnSubmit} />);
     
     const submitButton = screen.getByText('Add Task');
     fireEvent.click(submitButton);
@@ -82,15 +82,15 @@ describe('TaskForm Component', () => {
   });
 
   test('toggles advanced mode correctly', () => {
-    render(<TaskForm onSubmit={mockOnSubmit} />);
+    render(<TaskForm onAddTask={mockOnSubmit} />);
     
     const advancedButton = screen.getByText('Advanced');
     fireEvent.click(advancedButton);
     
-    expect(screen.getByLabelText('Due Date')).toBeInTheDocument();
+    expect(screen.getByLabelText('Due Date (Optional):')).toBeInTheDocument();
     
     fireEvent.click(advancedButton);
     
-    expect(screen.queryByLabelText('Due Date')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Due Date (Optional):')).not.toBeInTheDocument();
   });
 });
