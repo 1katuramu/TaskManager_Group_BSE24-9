@@ -1,3 +1,4 @@
+
 name: Optimized CI/CD Pipeline (Fixed)
 
 on:
@@ -37,16 +38,14 @@ jobs:
         cache: 'npm'
         cache-dependency-path: client/package-lock.json
     
-    - name: Check package-lock sync
+    - name: Install dependencies (with lock file auto-fix)
       run: |
         if [ -f package-lock.json ]; then
-          echo "Checking if package.json and package-lock.json are in sync..."
-          # Try npm ci first, if it fails, regenerate lock file
+          echo "Attempting clean install..."
           npm ci --prefer-offline || {
-            echo "⚠️ Lock file out of sync, regenerating..."
-            rm -f package-lock.json
-            npm install --package-lock-only
-            npm ci --prefer-offline
+            echo "⚠️ Lock file out of sync, regenerating with full install..."
+            rm -f package-lock.json node_modules -rf
+            npm install
           }
         else
           echo "No package-lock.json found, running npm install..."
@@ -98,15 +97,14 @@ jobs:
         cache: 'npm'
         cache-dependency-path: server/package-lock.json
     
-    - name: Check package-lock sync
+    - name: Install dependencies (with lock file auto-fix)
       run: |
         if [ -f package-lock.json ]; then
-          echo "Checking if package.json and package-lock.json are in sync..."
+          echo "Attempting clean install..."
           npm ci --prefer-offline || {
-            echo "⚠️ Lock file out of sync, regenerating..."
-            rm -f package-lock.json
-            npm install --package-lock-only
-            npm ci --prefer-offline
+            echo "⚠️ Lock file out of sync, regenerating with full install..."
+            rm -f package-lock.json node_modules -rf
+            npm install
           }
         else
           echo "No package-lock.json found, running npm install..."
@@ -135,29 +133,29 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
-    - name: Install server dependencies
+    - name: Install server dependencies (with lock file auto-fix)
       working-directory: ./server
       run: |
         if [ -f package-lock.json ]; then
+          echo "Attempting clean install..."
           npm ci --prefer-offline || {
-            echo "⚠️ Lock file out of sync, regenerating..."
-            rm -f package-lock.json
-            npm install --package-lock-only
-            npm ci --prefer-offline
+            echo "⚠️ Lock file out of sync, regenerating with full install..."
+            rm -rf package-lock.json node_modules
+            npm install
           }
         else
           npm install
         fi
     
-    - name: Install client dependencies
+    - name: Install client dependencies (with lock file auto-fix)
       working-directory: ./client
       run: |
         if [ -f package-lock.json ]; then
+          echo "Attempting clean install..."
           npm ci --prefer-offline || {
-            echo "⚠️ Lock file out of sync, regenerating..."
-            rm -f package-lock.json
-            npm install --package-lock-only
-            npm ci --prefer-offline
+            echo "⚠️ Lock file out of sync, regenerating with full install..."
+            rm -rf package-lock.json node_modules
+            npm install
           }
         else
           npm install
@@ -171,10 +169,10 @@ jobs:
       continue-on-error: true
     
     - name: Start backend server in background
+      working-directory: ./server
       run: |
-        cd server
-        nohup npm start > server.log 2>&1 &
-        echo $! > server.pid
+        nohup npm start > ../server.log 2>&1 &
+        echo $! > ../server.pid
         sleep 15
     
     - name: Wait for server to be ready
@@ -253,15 +251,15 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
-    - name: Install server dependencies
+    - name: Install server dependencies (with lock file auto-fix)
       working-directory: ./server
       run: |
         if [ -f package-lock.json ]; then
+          echo "Attempting clean install..."
           npm ci --prefer-offline || {
-            echo "⚠️ Lock file out of sync, regenerating..."
-            rm -f package-lock.json
-            npm install --package-lock-only
-            npm ci --prefer-offline
+            echo "⚠️ Lock file out of sync, regenerating with full install..."
+            rm -rf package-lock.json node_modules
+            npm install
           }
         else
           npm install
