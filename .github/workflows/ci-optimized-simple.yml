@@ -1,6 +1,5 @@
-name: Optimized CI/CD Pipeline (Simplified)
+name: Optimized CI/CD Pipeline (Fixed)
 
-# Trigger on push and pull requests with optimized conditions
 on:
   push:
     branches: [ main, develop ]
@@ -15,12 +14,11 @@ on:
       - 'docs/**'
       - '*.md'
 
-# Global environment variables for efficiency
 env:
   NODE_VERSION: '18'
 
 jobs:
-  # Frontend Build and Test Job (Optimized)
+  # Frontend Build and Test Job
   frontend:
     runs-on: ubuntu-latest
     
@@ -32,21 +30,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Node.js
+    - name: Setup Node.js with caching
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: client/package-lock.json
     
     - name: Install dependencies
-      run: npm install
+      run: npm ci --prefer-offline
     
     - name: Run linting
-      run: npm run lint || echo "Linting completed with warnings"
-      continue-on-error: true
+      run: npm run lint
+      continue-on-error: false
     
     - name: Run frontend tests with coverage
       run: npm test -- --coverage --watchAll=false --passWithNoTests
-      continue-on-error: true
     
     - name: Build frontend
       run: npm run build
@@ -57,8 +56,16 @@ jobs:
         name: frontend-build-${{ github.sha }}
         path: client/build/
         retention-days: 7
+    
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: frontend-coverage-${{ github.sha }}
+        path: client/coverage/
+        retention-days: 7
 
-  # Backend Build and Test Job (Optimized)
+  # Backend Build and Test Job
   backend:
     runs-on: ubuntu-latest
     
@@ -70,23 +77,24 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Node.js
+    - name: Setup Node.js with caching
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: server/package-lock.json
     
     - name: Install dependencies
-      run: npm install
+      run: npm ci --prefer-offline
     
     - name: Run backend tests
       run: npm test -- --passWithNoTests
-      continue-on-error: true
     
     - name: Security audit
-      run: npm audit --audit-level=high || echo "Security audit completed"
+      run: npm audit --audit-level=high
       continue-on-error: true
 
-  # Integration Tests Job (Optimized)
+  # Integration Tests Job
   integration-tests:
     runs-on: ubuntu-latest
     needs: [frontend, backend]
@@ -100,30 +108,46 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
-    - name: Install dependencies
-      run: |
-        cd server && npm install
-        cd ../client && npm install
+    - name: Install server dependencies
+      working-directory: ./server
+      run: npm ci --prefer-offline
+    
+    - name: Install client dependencies
+      working-directory: ./client
+      run: npm ci --prefer-offline
+    
+    - name: Download frontend build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-build-${{ github.sha }}
+        path: client/build/
     
     - name: Start backend server
+      working-directory: ./server
       run: |
-        cd server
         npm start &
+        echo $! > server.pid
         sleep 15
+    
+    - name: Wait for server to be ready
+      run: |
+        timeout 30 bash -c 'until curl -f http://localhost:5000/health; do sleep 2; done' || exit 1
     
     - name: Test API endpoints
       run: |
         echo "Testing API endpoints..."
-        curl -f http://localhost:5000/ || echo "Root endpoint test"
-        curl -f http://localhost:5000/health || echo "Health endpoint test"
-        curl -f http://localhost:5000/tasks || echo "Tasks endpoint test"
+        curl -f http://localhost:5000/ || (echo "❌ Root endpoint failed" && exit 1)
+        curl -f http://localhost:5000/health || (echo "❌ Health endpoint failed" && exit 1)
+        curl -f http://localhost:5000/tasks || (echo "❌ Tasks endpoint failed" && exit 1)
         echo "✅ API integration tests completed"
     
-    - name: Test frontend-backend integration
+    - name: Stop backend server
+      if: always()
       run: |
-        cd client
-        npm run build
-        echo "✅ Frontend-backend integration successful"
+        if [ -f server.pid ]; then
+          kill $(cat server.pid) || true
+          rm server.pid
+        fi
 
   # Code Quality Check Job
   code-quality:
@@ -142,7 +166,8 @@ jobs:
       run: |
         echo "🔍 Running code quality analysis..."
         echo "📁 Checking file structure..."
-        find . -name "*.js" -not -path "./node_modules/*" | wc -l | xargs echo "JavaScript files found:"
+        JS_FILES=$(find . -name "*.js" -not -path "*/node_modules/*" -not -path "*/build/*" -not -path "*/coverage/*" | wc -l)
+        echo "JavaScript files found: $JS_FILES"
         echo "✅ Code quality analysis completed"
 
   # Performance Tests (only on main branch)
@@ -160,24 +185,42 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
-    - name: Install dependencies
-      run: |
-        cd server && npm install
-        cd ../client && npm install
+    - name: Install server dependencies
+      working-directory: ./server
+      run: npm ci --prefer-offline
     
     - name: Start backend for performance testing
+      working-directory: ./server
       run: |
-        cd server
         npm start &
+        echo $! > server.pid
         sleep 15
+    
+    - name: Wait for server to be ready
+      run: |
+        timeout 30 bash -c 'until curl -f http://localhost:5000/health; do sleep 2; done' || exit 1
     
     - name: Run performance tests
       run: |
         echo "🚀 Running performance tests..."
+        TOTAL_TIME=0
         for i in {1..5}; do
-          curl -s -w "Response time: %{time_total}s\n" http://localhost:5000/health
+          RESPONSE=$(curl -s -w "%{time_total}" -o /dev/null http://localhost:5000/health)
+          echo "Request $i: ${RESPONSE}s"
+          TOTAL_TIME=$(echo "$TOTAL_TIME + $RESPONSE" | bc)
         done
+        AVG_TIME=$(echo "scale=4; $TOTAL_TIME / 5" | bc)
+        echo "Average response time: ${AVG_TIME}s"
         echo "✅ Performance tests completed"
+    
+    - name: Stop backend server
+      if: always()
+      working-directory: ./server
+      run: |
+        if [ -f server.pid ]; then
+          kill $(cat server.pid) || true
+          rm server.pid
+        fi
 
   # Final validation and reporting
   validate:
@@ -186,30 +229,65 @@ jobs:
     if: always()
     
     steps:
-    - name: Generate CI report
+    - name: Check job statuses
       run: |
-        echo "📊 Optimized CI/CD Pipeline Report" > ci-report.md
-        echo "==================================" >> ci-report.md
-        echo "" >> ci-report.md
-        echo "**Pipeline Status:**" >> ci-report.md
-        echo "- Frontend: ${{ needs.frontend.result }}" >> ci-report.md
-        echo "- Backend: ${{ needs.backend.result }}" >> ci-report.md
-        echo "- Integration: ${{ needs.integration-tests.result }}" >> ci-report.md
-        echo "- Code Quality: ${{ needs.code-quality.result }}" >> ci-report.md
-        echo "" >> ci-report.md
-        echo "**Optimization Features:**" >> ci-report.md
-        echo "- Parallel job execution" >> ci-report.md
-        echo "- Conditional performance testing" >> ci-report.md
-        echo "- Comprehensive error handling" >> ci-report.md
-        echo "- Automated reporting" >> ci-report.md
-        echo "" >> ci-report.md
-        echo "**Timestamp:** $(date)" >> ci-report.md
-        echo "**Commit:** ${{ github.sha }}" >> ci-report.md
-        echo "**Branch:** ${{ github.ref_name }}" >> ci-report.md
+        echo "Frontend: ${{ needs.frontend.result }}"
+        echo "Backend: ${{ needs.backend.result }}"
+        echo "Integration: ${{ needs.integration-tests.result }}"
+        echo "Code Quality: ${{ needs.code-quality.result }}"
+        
+        if [[ "${{ needs.frontend.result }}" != "success" ]] || \
+           [[ "${{ needs.backend.result }}" != "success" ]] || \
+           [[ "${{ needs.integration-tests.result }}" != "success" ]] || \
+           [[ "${{ needs.code-quality.result }}" != "success" ]]; then
+          echo "❌ Pipeline has failures"
+          exit 1
+        fi
+    
+    - name: Generate CI report
+      if: always()
+      run: |
+        cat << EOF > ci-report.md
+        # 📊 Optimized CI/CD Pipeline Report
+        
+        ## Pipeline Status
+        
+        | Job | Status |
+        |-----|--------|
+        | Frontend | ${{ needs.frontend.result }} |
+        | Backend | ${{ needs.backend.result }} |
+        | Integration Tests | ${{ needs.integration-tests.result }} |
+        | Code Quality | ${{ needs.code-quality.result }} |
+        
+        ## Optimization Features
+        
+        - ✅ Parallel job execution
+        - ✅ Dependency caching (npm cache)
+        - ✅ Build artifact reuse
+        - ✅ Conditional performance testing (main branch only)
+        - ✅ Proper error handling and validation
+        - ✅ Server health checks before testing
+        - ✅ Proper cleanup of background processes
+        
+        ## Build Information
+        
+        - **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        - **Commit:** ${{ github.sha }}
+        - **Branch:** ${{ github.ref_name }}
+        - **Triggered by:** ${{ github.event_name }}
+        - **Actor:** ${{ github.actor }}
+        
+        ## Next Steps
+        
+        ${{ needs.frontend.result == 'success' && needs.backend.result == 'success' && needs.integration-tests.result == 'success' && '✅ All checks passed - Ready for deployment!' || '❌ Some checks failed - Please review the logs' }}
+        EOF
+        
+        cat ci-report.md
     
     - name: Upload CI report
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: ci-optimized-report-${{ github.sha }}
+        name: ci-report-${{ github.sha }}
         path: ci-report.md
-        retention-days: 7
+        retention-days: 30
