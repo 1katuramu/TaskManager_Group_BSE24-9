@@ -170,4 +170,4 @@ jobs:
       with:
         name: ci-reliable-report-${{ github.sha }}
         path: ci-report.md
-        retention-days: 7
+        retention-days: 30
