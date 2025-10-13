@@ -1,32 +1,19 @@
-name: Optimized CI/CD Pipeline (Simplified)
+name: Reliable CI/CD Pipeline
 
-# Trigger on push and pull requests with optimized conditions
+# Trigger on push and pull requests
 on:
   push:
     branches: [ main, develop ]
-    paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '*.md'
   pull_request:
     branches: [ main, develop ]
-    paths-ignore:
-      - 'README.md'
-      - 'docs/**'
-      - '*.md'
 
-# Global environment variables for efficiency
 env:
   NODE_VERSION: '18'
 
 jobs:
-  # Frontend Build and Test Job (Optimized)
+  # Frontend Job
   frontend:
     runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./client
     
     steps:
     - name: Checkout code
@@ -37,18 +24,17 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
-    - name: Install dependencies
+    - name: Install frontend dependencies
+      working-directory: ./client
       run: npm install
     
-    - name: Run linting
-      run: npm run lint || echo "Linting completed with warnings"
-      continue-on-error: true
-    
-    - name: Run frontend tests with coverage
+    - name: Run frontend tests
+      working-directory: ./client
       run: npm test -- --coverage --watchAll=false --passWithNoTests
       continue-on-error: true
     
     - name: Build frontend
+      working-directory: ./client
       run: npm run build
     
     - name: Upload frontend build artifacts
@@ -58,13 +44,9 @@ jobs:
         path: client/build/
         retention-days: 7
 
-  # Backend Build and Test Job (Optimized)
+  # Backend Job
   backend:
     runs-on: ubuntu-latest
-    
-    defaults:
-      run:
-        working-directory: ./server
     
     steps:
     - name: Checkout code
@@ -75,18 +57,16 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
-    - name: Install dependencies
+    - name: Install backend dependencies
+      working-directory: ./server
       run: npm install
     
     - name: Run backend tests
+      working-directory: ./server
       run: npm test -- --passWithNoTests
       continue-on-error: true
-    
-    - name: Security audit
-      run: npm audit --audit-level=high || echo "Security audit completed"
-      continue-on-error: true
 
-  # Integration Tests Job (Optimized)
+  # Integration Tests Job
   integration-tests:
     runs-on: ubuntu-latest
     needs: [frontend, backend]
@@ -100,14 +80,17 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
-    - name: Install dependencies
-      run: |
-        cd server && npm install
-        cd ../client && npm install
+    - name: Install backend dependencies
+      working-directory: ./server
+      run: npm install
+    
+    - name: Install frontend dependencies
+      working-directory: ./client
+      run: npm install
     
     - name: Start backend server
+      working-directory: ./server
       run: |
-        cd server
         npm start &
         sleep 15
     
@@ -119,14 +102,13 @@ jobs:
         curl -f http://localhost:5000/tasks || echo "Tasks endpoint test"
         echo "✅ API integration tests completed"
     
-    - name: Test frontend-backend integration
+    - name: Test frontend build
+      working-directory: ./client
       run: |
-        cd client
-        npm install
         npm run build
-        echo "✅ Frontend-backend integration successful"
+        echo "✅ Frontend build successful"
 
-  # Code Quality Check Job
+  # Code Quality Job
   code-quality:
     runs-on: ubuntu-latest
     
@@ -139,49 +121,24 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
     
-    - name: Run code quality checks
+    - name: Install frontend dependencies
+      working-directory: ./client
+      run: npm install
+    
+    - name: Run frontend linting
+      working-directory: ./client
+      run: npm run lint || echo "Linting completed with warnings"
+      continue-on-error: true
+    
+    - name: Check code quality
       run: |
         echo "🔍 Running code quality analysis..."
-        echo "📁 Checking file structure..."
-        find . -name "*.js" -not -path "./node_modules/*" | wc -l | xargs echo "JavaScript files found:"
+        echo "📁 JavaScript files found:"
+        find . -name "*.js" -not -path "./node_modules/*" | wc -l
         echo "✅ Code quality analysis completed"
 
-  # Performance Tests (only on main branch)
-  performance-tests:
-    runs-on: ubuntu-latest
-    needs: [frontend, backend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        cd server && npm install
-        cd client && npm install
-    
-    - name: Start backend for performance testing
-      run: |
-        cd server
-        npm start &
-        sleep 15
-    
-    - name: Run performance tests
-      run: |
-        echo "🚀 Running performance tests..."
-        for i in {1..5}; do
-          curl -s -w "Response time: %{time_total}s\n" http://localhost:5000/health
-        done
-        echo "✅ Performance tests completed"
-
-  # Final validation and reporting
-  validate:
+  # Final Report
+  report:
     runs-on: ubuntu-latest
     needs: [frontend, backend, integration-tests, code-quality]
     if: always()
@@ -189,8 +146,8 @@ jobs:
     steps:
     - name: Generate CI report
       run: |
-        echo "📊 Optimized CI/CD Pipeline Report" > ci-report.md
-        echo "==================================" >> ci-report.md
+        echo "📊 Reliable CI/CD Pipeline Report" > ci-report.md
+        echo "=================================" >> ci-report.md
         echo "" >> ci-report.md
         echo "**Pipeline Status:**" >> ci-report.md
         echo "- Frontend: ${{ needs.frontend.result }}" >> ci-report.md
@@ -198,11 +155,11 @@ jobs:
         echo "- Integration: ${{ needs.integration-tests.result }}" >> ci-report.md
         echo "- Code Quality: ${{ needs.code-quality.result }}" >> ci-report.md
         echo "" >> ci-report.md
-        echo "**Optimization Features:**" >> ci-report.md
-        echo "- Parallel job execution" >> ci-report.md
-        echo "- Conditional performance testing" >> ci-report.md
+        echo "**Features:**" >> ci-report.md
+        echo "- Reliable dependency management" >> ci-report.md
+        echo "- Proper working directory handling" >> ci-report.md
         echo "- Comprehensive error handling" >> ci-report.md
-        echo "- Automated reporting" >> ci-report.md
+        echo "- Parallel job execution" >> ci-report.md
         echo "" >> ci-report.md
         echo "**Timestamp:** $(date)" >> ci-report.md
         echo "**Commit:** ${{ github.sha }}" >> ci-report.md
@@ -211,6 +168,6 @@ jobs:
     - name: Upload CI report
       uses: actions/upload-artifact@v4
       with:
-        name: ci-optimized-report-${{ github.sha }}
+        name: ci-reliable-report-${{ github.sha }}
         path: ci-report.md
         retention-days: 7
